@@ -1,7 +1,7 @@
-import uuid
-import digitalocean
 from datetime import datetime, timedelta
 import time
+
+import digitalocean
 
 DROPLET_NAME_FORMAT = "lambdaRun-{id}-{expiration_time}"
 
@@ -18,7 +18,15 @@ def get_image_id(api_key, image_name, region):
                        (" in region '{}'".format(region) if region else ""))
 
 
-def create_temporary_droplet(api_key, image_id, image_name, region, user_data, lifespan_in_seconds):
+def get_ssh_key_id(api_key, ssh_key_fingerprint):
+    print "Looking up ssh key ID for key fingerprint {}...".format(ssh_key_fingerprint)
+    manager = digitalocean.Manager(token=api_key)
+    key = manager.get_ssh_key(ssh_key_fingerprint)
+    print "Got key ID", key.id
+    return key.id
+
+
+def create_temporary_droplet(api_key, image_id, image_name, region, ssh_key_id, user_data, lifespan_in_seconds):
     expiration_date = datetime.now() + timedelta(seconds=lifespan_in_seconds)
     expiration_date_posix = int(time.mktime(expiration_date.timetuple()))
     droplet_name = DROPLET_NAME_FORMAT.format(
@@ -33,7 +41,8 @@ def create_temporary_droplet(api_key, image_id, image_name, region, user_data, l
         image=image_id,
         size_slug='512mb',
         backups=False,
-        user_data=user_data
+        user_data=user_data,
+        ssh_keys=[ssh_key_id]
     )
     droplet.create()
 

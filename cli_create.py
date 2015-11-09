@@ -9,6 +9,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-k", "--api-key", required=True)
+    parser.add_argument("-s", "--ssh-key-fingerprint", required=True)
     parser.add_argument("-i", "--image-name", required=True)
     parser.add_argument("-r", "--region", required=True)
     parser.add_argument("-t", "--lifespan-in-seconds", required=True, type=int)
@@ -20,6 +21,7 @@ def main():
 
     start(
         api_key=args.api_key,
+        ssh_key_fingerprint=args.ssh_key_fingerprint,
         image_name=args.image_name,
         region=args.region,
         user_data_file=args.user_data_file,
