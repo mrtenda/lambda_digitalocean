@@ -1,7 +1,9 @@
 import uuid
 import digitalocean
+from datetime import datetime, timedelta
+import time
 
-DROPLET_NAME_PREFIX = "lambdatmp-"
+DROPLET_NAME_FORMAT = "lambdaRun-{id}-{expiration_time}"
 
 
 def get_image_id(api_key, image_name, region):
@@ -16,8 +18,13 @@ def get_image_id(api_key, image_name, region):
                        (" in region '{}'".format(region) if region else ""))
 
 
-def create_temporary_droplet(api_key, image_id, region, user_data):
-    droplet_name = DROPLET_NAME_PREFIX + "{}".format(uuid.uuid4().hex[0:8])
+def create_temporary_droplet(api_key, image_id, image_name, region, user_data, lifespan_in_seconds):
+    expiration_date = datetime.now() + timedelta(seconds=lifespan_in_seconds)
+    expiration_date_posix = int(time.mktime(expiration_date.timetuple()))
+    droplet_name = DROPLET_NAME_FORMAT.format(
+        id=image_name,
+        expiration_time=expiration_date_posix,
+    )
     print "Creating temporary droplet {}...".format(droplet_name)
     droplet = digitalocean.Droplet(
         token=api_key,
@@ -29,18 +36,25 @@ def create_temporary_droplet(api_key, image_id, region, user_data):
         user_data=user_data
     )
     droplet.create()
-    print "Created."
 
 
-def delete_droplets(api_key, filter_function):
+def delete_expired_droplets(api_key):
+    now_posix = int(time.time())
+
     manager = digitalocean.Manager(token=api_key)
 
-    droplets = [x for x in manager.get_all_droplets() if filter_function(x)]
-    for droplet in droplets:
-        if droplet.status == "active":
-            print "Deleting droplet {}...".format(droplet.name)
-            droplet.destroy()
+    for droplet in manager.get_all_droplets():
+        if not droplet.name.startswith("lambdaRun-"):
+            continue
 
+        expiration_date_posix = int(droplet.name.split('-')[-1])
+        if expiration_date_posix > now_posix:
+            print "Not deleting non-expired droplet {}".format(droplet.name)
+            continue
 
-def delete_temporary_droplets(api_key):
-    delete_droplets(api_key=api_key, filter_function=(lambda x: x.name.startswith(DROPLET_NAME_PREFIX)))
+        if droplet.status != "active":
+            print "Skipping non-active droplet {}".format(droplet.name)
+            continue
+
+        print "Deleting expired droplet {}...".format(droplet.name)
+        droplet.destroy()

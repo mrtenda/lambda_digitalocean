@@ -2,13 +2,14 @@
 
 PIP_DEPENDENCIES="python-digitalocean"
 
-[ $# -eq 0 ] && { echo "Usage: $0 api_key image_name region user_data_filename"; exit 1; }
+[ $# -eq 0 ] && { echo "Usage: $0 api_key image_name region user_data_filename lifespan_in_seconds"; exit 1; }
 
 BUILD_ID=`date +%s`
 API_KEY=$1
 IMAGE_NAME=$2
 REGION=$3
 USER_DATA_FILENAME=$4
+LIFESPAN_IN_SECONDS=$5
 
 TMP_DIR="/tmp/tmp_ld_$BUILD_ID"
 
@@ -25,6 +26,7 @@ sed -i "s#{api_key}#$API_KEY#" $TMP_DIR/config.py
 sed -i "s#{image_name}#$IMAGE_NAME#" $TMP_DIR/config.py
 sed -i "s#{region}#$REGION#" $TMP_DIR/config.py
 sed -i "s#{user_data_filename}#`basename $USER_DATA_FILENAME`#" $TMP_DIR/config.py
+sed -i "s#{lifespan_in_seconds}#$LIFESPAN_IN_SECONDS#" $TMP_DIR/config.py
 
 ZIPFILE_NAME=`pwd`/"lambda_digitalocean_`date +%s`"
 
