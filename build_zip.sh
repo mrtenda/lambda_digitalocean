@@ -1,17 +1,46 @@
 #!/bin/sh
 
-PIP_DEPENDENCIES="python-digitalocean"
+usage() {
+    echo "Usage: $0 -k api_key -s ssh_key_fingerprint -i image_name -r region -t lifespan_in_seconds -u user_data_filename" 1>&2;
+    exit 1;
+}
 
-[ $# -eq 0 ] && { echo "Usage: $0 api_key ssh_key_fingerprint image_name region user_data_filename lifespan_in_seconds"; exit 1; }
+while getopts "k:s:i:r:t:u:" o; do
+    case "${o}" in
+        k)
+            API_KEY=${OPTARG}
+            ;;
+        s)
+            SSH_KEY_FINGERPRINT=${OPTARG}
+            ;;
+        i)
+            IMAGE_NAME=${OPTARG}
+            ;;
+        r)
+            REGION=${OPTARG}
+            ;;
+        t)
+            LIFESPAN_IN_SECONDS=${OPTARG}
+            ;;
+        u)
+            USER_DATA_FILENAME=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+echo "$API_KEY , $SSH_KEY_FINGERPRINT , $IMAGE_NAME , $REGION , $LIFESPAN_IN_SECONDS , $USER_DATA_FILENAME"
+
+if [ -z "${API_KEY}" ] || [ -z "${SSH_KEY_FINGERPRINT}" ] || [ -z "${IMAGE_NAME}" ] \
+  || [ -z "${REGION}" ] || [ -z "${LIFESPAN_IN_SECONDS}" ] || [ -z "${USER_DATA_FILENAME}" ]; then
+    usage
+fi
 
 BUILD_ID=`date +%s`
-API_KEY=$1
-SSH_KEY_FINGERPRINT=$2
-IMAGE_NAME=$3
-REGION=$4
-USER_DATA_FILENAME=$5
-LIFESPAN_IN_SECONDS=$6
-
+PIP_DEPENDENCIES="python-digitalocean"
 TMP_DIR="/tmp/tmp_ld_$BUILD_ID"
 
 mkdir $TMP_DIR
